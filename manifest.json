@@ -33,18 +33,7 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "*://*.youtube.com/*",
-        "*://*.tiktok.com/*",
-        "*://*.instagram.com/*",
-        "*://*.netflix.com/*",
-        "*://*.twitch.tv/*",
-        "*://*.twitter.com/*",
-        "*://*.x.com/*",
-        "*://*.reddit.com/*",
-        "*://*.facebook.com/*",
-        "*://*.vimeo.com/*"
-      ],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
