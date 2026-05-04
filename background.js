@@ -23,6 +23,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'GET_TOTAL_EVENTS') {
     sendResponse({ total: totalEventsBlocked });
+    // FIX: return true so the message channel stays open long enough
+    // for sendResponse() to be received. Without this, the channel closes
+    // immediately and the popup gets no response (runtime.lastError fires).
+    return true;
   }
 
   if (msg.type === 'RESET_BADGE') {

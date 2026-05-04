@@ -57,7 +57,10 @@
       }
     }
     if (msg.type === 'GET_STATS') {
-      chrome.runtime.sendMessage({ type: 'STATS', eventsBlocked });
+      // FIX: use callback form to avoid uncaught Promise rejection
+      chrome.runtime.sendMessage({ type: 'STATS', eventsBlocked }, () => {
+        void chrome.runtime.lastError;
+      });
     }
   });
 
@@ -340,7 +343,12 @@
 
   // ─── Notify background (badge counter) ───────────────────────
   function notifyBackground() {
-    chrome.runtime.sendMessage({ type: 'FLASH_DETECTED', eventsBlocked }).catch(() => {});
+    // FIX: use callback form instead of .catch() — chrome.runtime.sendMessage
+    // in MV3 content scripts does not reliably return a thenable, and calling
+    // .catch() on the return value throws when the background SW is inactive.
+    chrome.runtime.sendMessage({ type: 'FLASH_DETECTED', eventsBlocked }, () => {
+      void chrome.runtime.lastError;
+    });
   }
 
 })();

@@ -3,6 +3,9 @@
  * ======================
  * Handles the popup UI, reads/writes settings via chrome.storage,
  * and pushes updates to content scripts on active tab.
+ *
+ * NOTE: No inline event handlers are used in popup.html — Chrome
+ * extensions block them via CSP. All listeners are registered here.
  */
 
 'use strict';
@@ -28,13 +31,54 @@ document.addEventListener('DOMContentLoaded', () => {
     if (result.safeview_settings) {
       settings = Object.assign(settings, result.safeview_settings);
     }
-
     if (settings.onboarded && settings.mode) {
       showMain();
     } else {
       showOnboard();
     }
   });
+
+  // ── Onboarding: mode card selection ──
+  const modesList = document.getElementById('ob-modes-list');
+  if (modesList) {
+    modesList.addEventListener('click', (e) => {
+      const card = e.target.closest('.ob-mode');
+      if (!card) return;
+      document.querySelectorAll('.ob-mode').forEach(m => m.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedOnboardMode = card.dataset.mode;
+      document.getElementById('ob-confirm').disabled = false;
+    });
+  }
+
+  // ── Onboarding: confirm button ──
+  document.getElementById('ob-confirm').addEventListener('click', completeOnboarding);
+
+  // ── Master toggle ──
+  document.getElementById('master-toggle').addEventListener('click', toggleMaster);
+
+  // ── Mode pills ──
+  document.querySelectorAll('.mode-pill').forEach(pill => {
+    pill.addEventListener('click', () => setMode(pill.dataset.mode));
+  });
+
+  // ── Dim slider ──
+  document.getElementById('dim-slider').addEventListener('input', function () {
+    updateDim(this);
+  });
+
+  // ── Sensitivity slider ──
+  document.getElementById('sens-slider').addEventListener('input', function () {
+    updateSens(this);
+  });
+
+  // ── Site toggles ──
+  document.querySelectorAll('.site-toggle').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('on'));
+  });
+
+  // ── Footer: change mode ──
+  document.getElementById('btn-change-mode').addEventListener('click', resetOnboarding);
 
   // Poll for events blocked stat
   setInterval(refreshStats, 2000);
@@ -43,28 +87,21 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─── Onboarding ───────────────────────────────────────────────
 let selectedOnboardMode = null;
 
-window.selectOnboardMode = function (el) {
-  document.querySelectorAll('.ob-mode').forEach(m => m.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedOnboardMode = el.dataset.mode;
-  document.getElementById('ob-confirm').disabled = false;
-};
-
-window.completeOnboarding = function () {
+function completeOnboarding() {
   if (!selectedOnboardMode) return;
   settings.mode      = selectedOnboardMode;
   settings.onboarded = true;
   saveSettings();
   showMain();
-};
+}
 
-window.resetOnboarding = function () {
+function resetOnboarding() {
   settings.onboarded = false;
   settings.mode      = null;
   selectedOnboardMode = null;
   saveSettings();
   showOnboard();
-};
+}
 
 function showOnboard() {
   document.getElementById('screen-onboard').classList.add('active');
@@ -128,46 +165,47 @@ function updateStatusBar() {
 }
 
 // ─── Controls ─────────────────────────────────────────────────
-window.toggleMaster = function () {
+function toggleMaster() {
   settings.enabled = !settings.enabled;
   saveSettings();
   renderMain();
   pushToContentScript();
-};
+}
 
-window.setMode = function (mode) {
+function setMode(mode) {
   settings.mode = mode;
   saveSettings();
   renderMain();
   pushToContentScript();
-};
+}
 
-window.updateDim = function (el) {
+function updateDim(el) {
   settings.dimLevel = parseInt(el.value) / 100;
   document.getElementById('dim-val').textContent = el.value + '%';
   saveSettings();
   pushToContentScript();
-};
+}
 
-window.updateSens = function (el) {
+function updateSens(el) {
   const level = parseInt(el.value);
   settings.sensitivity = SENS_MAP[level].value;
   document.getElementById('sens-val').textContent = SENS_MAP[level].label;
   saveSettings();
   pushToContentScript();
-};
+}
 
 // ─── Stats refresh ────────────────────────────────────────────
 function refreshStats() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]) return;
-    chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATS' }, (response) => {
-      if (chrome.runtime.lastError) return;
+    chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_STATS' }, () => {
+      void chrome.runtime.lastError;
     });
   });
 
   chrome.runtime.sendMessage({ type: 'GET_TOTAL_EVENTS' }, (response) => {
-    if (chrome.runtime.lastError || !response) return;
+    void chrome.runtime.lastError;
+    if (!response) return;
     const n = response.total || 0;
     document.getElementById('stat-blocked').textContent = n;
     document.getElementById('events-badge').textContent = n + ' blocked';
@@ -182,9 +220,10 @@ function saveSettings() {
 function pushToContentScript() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]) return;
-    chrome.tabs.sendMessage(tabs[0].id, {
-      type: 'SETTINGS_UPDATE',
-      settings,
-    }).catch(() => {}); // tab may not have content script
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { type: 'SETTINGS_UPDATE', settings },
+      () => { void chrome.runtime.lastError; }
+    );
   });
 }
