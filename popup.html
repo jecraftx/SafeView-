@@ -1,640 +1,785 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafeView</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --teal:        #1D9E75;
-      --teal-light:  #5DCAA5;
-      --teal-dim:    rgba(29,158,117,0.12);
-      --teal-border: rgba(29,158,117,0.35);
-      --coral:       #D85A30;
-      --amber:       #BA7517;
-      --bg:          #0d1f1a;
-      --bg2:         #112318;
-      --bg3:         rgba(255,255,255,0.04);
-      --border:      rgba(255,255,255,0.08);
-      --text:        #ffffff;
-      --text2:       rgba(255,255,255,0.6);
-      --text3:       rgba(255,255,255,0.35);
-    }
-
-    body {
-      width: 340px;
-      min-height: 420px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      overflow-x: hidden;
-    }
-
-    /* ── SCREENS ── */
-    .screen { display: none; flex-direction: column; }
-    .screen.active { display: flex; }
-
-    /* ── ONBOARDING ── */
-    #screen-onboard {
-      padding: 28px 24px 24px;
-      min-height: 420px;
-      justify-content: space-between;
-    }
-
-    .ob-logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .ob-logo-icon {
-      width: 32px; height: 32px;
-      background: var(--teal);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .ob-logo-name {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.25rem;
-      letter-spacing: -0.02em;
-    }
-
-    .ob-logo-name span { color: var(--teal-light); }
-
-    .ob-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.5rem;
-      line-height: 1.2;
-      margin-bottom: 8px;
-    }
-
-    .ob-title em { font-style: italic; color: var(--teal-light); }
-
-    .ob-sub {
-      font-size: 0.82rem;
-      color: var(--text2);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .ob-modes-label {
-      font-size: 0.7rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 10px;
-    }
-
-    .ob-modes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-
-    .ob-mode {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.18s;
-      background: var(--bg3);
-    }
-
-    .ob-mode:hover { border-color: var(--teal-border); background: var(--teal-dim); }
-
-    .ob-mode.selected {
-      border-color: var(--teal);
-      background: var(--teal-dim);
-    }
-
-    .ob-mode-icon {
-      width: 34px; height: 34px;
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    .icon-dim      { background: rgba(186,117,23,0.2); }
-    .icon-suppress { background: rgba(29,158,117,0.2); }
-    .icon-warn     { background: rgba(216,90,48,0.2);  }
-
-    .ob-mode-body h4 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 2px;
-      color: var(--text);
-    }
-
-    .ob-mode-body p {
-      font-size: 0.75rem;
-      color: var(--text2);
-      line-height: 1.5;
-    }
-
-    .ob-check {
-      margin-left: auto;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      border: 1.5px solid var(--border);
-      flex-shrink: 0;
-      margin-top: 8px;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
-    }
-
-    .ob-mode.selected .ob-check {
-      background: var(--teal);
-      border-color: var(--teal);
-    }
-
-    .ob-mode.selected .ob-check::after {
-      content: '';
-      width: 5px; height: 9px;
-      border: 2px solid white;
-      border-top: none; border-left: none;
-      transform: rotate(45deg) translateY(-1px);
-      display: block;
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 12px;
-      background: var(--teal);
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.01em;
-    }
-
-    .btn-primary:hover { background: #22b885; transform: translateY(-1px); }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    /* ── MAIN POPUP ── */
-    #screen-main {
-      min-height: 420px;
-    }
-
-    .popup-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 18px 14px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .popup-logo {
-      display: flex; align-items: center; gap: 7px;
-    }
-
-    .popup-logo-icon {
-      width: 26px; height: 26px;
-      background: var(--teal);
-      border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .popup-logo-name {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.05rem;
-    }
-
-    .popup-logo-name span { color: var(--teal-light); }
-
-    .master-toggle-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .master-label {
-      font-size: 0.75rem;
-      color: var(--text3);
-    }
-
-    .toggle {
-      width: 40px; height: 22px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 11px;
-      border: none;
-      cursor: pointer;
-      position: relative;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .toggle.on { background: var(--teal); }
-
-    .toggle::after {
-      content: '';
-      position: absolute;
-      width: 16px; height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 3px; left: 3px;
-      transition: transform 0.2s;
-    }
-
-    .toggle.on::after { transform: translateX(18px); }
-
-    /* status bar */
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      background: var(--teal-dim);
-      border-bottom: 1px solid var(--teal-border);
-    }
-
-    .status-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--teal-light);
-      animation: pulse 2s infinite;
-      flex-shrink: 0;
-    }
-
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-    .status-bar.alert { background: rgba(216,90,48,0.1); border-color: rgba(216,90,48,0.35); }
-    .status-bar.alert .status-dot { background: var(--coral); }
-
-    .status-text { font-size: 0.78rem; color: var(--teal-light); flex: 1; }
-    .status-bar.alert .status-text { color: #F09575; }
-
-    .events-badge {
-      font-size: 0.72rem;
-      background: rgba(29,158,117,0.2);
-      color: var(--teal-light);
-      padding: 2px 8px;
-      border-radius: 999px;
-    }
-
-    /* body */
-    .popup-body { padding: 16px 18px; flex: 1; }
-
-    .section-label {
-      font-size: 0.68rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      margin-bottom: 10px;
-    }
-
-    /* mode selector */
-    .mode-pills {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 18px;
-    }
-
-    .mode-pill {
-      flex: 1;
-      padding: 8px 4px;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--bg3);
-      color: var(--text2);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.72rem;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .mode-pill:hover { border-color: var(--teal-border); color: var(--text); }
-
-    .mode-pill.active {
-      border-color: var(--teal);
-      background: var(--teal-dim);
-      color: var(--teal-light);
-    }
-
-    .mode-pill-icon { font-size: 15px; }
-
-    /* sensitivity */
-    .sens-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .sens-row label { font-size: 0.8rem; color: var(--text2); }
-    .sens-val { font-size: 0.8rem; color: var(--teal-light); font-weight: 500; }
-
-    input[type=range] {
-      width: 100%;
-      appearance: none;
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 2px;
-      outline: none;
-      margin-bottom: 16px;
-      cursor: pointer;
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      appearance: none;
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--teal);
-      cursor: pointer;
-      box-shadow: 0 0 0 3px rgba(29,158,117,0.2);
-    }
-
-    /* sites */
-    .sites-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 18px;
-    }
-
-    .site-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 10px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-
-    .site-name { font-size: 0.77rem; color: var(--text2); }
-
-    .site-toggle {
-      width: 30px; height: 16px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      position: relative;
-      transition: background 0.2s;
-    }
-
-    .site-toggle.on { background: var(--teal); }
-
-    .site-toggle::after {
-      content: '';
-      position: absolute;
-      width: 11px; height: 11px;
-      background: white;
-      border-radius: 50%;
-      top: 2.5px; left: 2.5px;
-      transition: transform 0.2s;
-    }
-
-    .site-toggle.on::after { transform: translateX(13px); }
-
-    /* stats row */
-    .stats-mini {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-
-    .stat-mini-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 9px 8px;
-      text-align: center;
-    }
-
-    .stat-mini-num {
-      display: block;
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.3rem;
-      color: var(--teal-light);
-      line-height: 1;
-      margin-bottom: 3px;
-    }
-
-    .stat-mini-label {
-      font-size: 0.65rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    /* footer */
-    .popup-footer {
-      padding: 10px 18px 14px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .footer-note {
-      font-size: 0.7rem;
-      color: var(--text3);
-    }
-
-    .btn-link {
-      background: none;
-      border: none;
-      color: var(--teal-light);
-      font-size: 0.72rem;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      text-decoration: underline;
-      opacity: 0.7;
-    }
-
-    .btn-link:hover { opacity: 1; }
-
-    /* disabled state */
-    body.disabled .status-bar { background: rgba(255,255,255,0.03); border-color: var(--border); }
-    body.disabled .status-dot { background: var(--text3); animation: none; }
-    body.disabled .status-text { color: var(--text3); }
-    body.disabled .mode-pill.active { border-color: var(--border); background: var(--bg3); color: var(--text2); }
-  </style>
-</head>
-<body>
-
-  <!-- ── ONBOARDING SCREEN ── -->
-  <div id="screen-onboard" class="screen active">
-    <div>
-      <div class="ob-logo">
-        <div class="ob-logo-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="3"/><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
-          </svg>
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeView</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
+      rel="stylesheet">
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --teal: #1D9E75;
+        --teal-light: #5DCAA5;
+        --teal-dim: rgba(29, 158, 117, 0.12);
+        --teal-border: rgba(29, 158, 117, 0.35);
+        --coral: #D85A30;
+        --amber: #BA7517;
+        --bg: #0d1f1a;
+        --bg2: #112318;
+        --bg3: rgba(255, 255, 255, 0.04);
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #ffffff;
+        --text2: rgba(255, 255, 255, 0.6);
+        --text3: rgba(255, 255, 255, 0.35);
+      }
+
+      body {
+        width: 340px;
+        min-height: 420px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        overflow-x: hidden;
+      }
+
+      /* ── SCREENS ── */
+      .screen {
+        display: none;
+        flex-direction: column;
+      }
+
+      .screen.active {
+        display: flex;
+      }
+
+      /* ── ONBOARDING ── */
+      #screen-onboard {
+        padding: 28px 24px 24px;
+        min-height: 420px;
+        justify-content: space-between;
+      }
+
+      .ob-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .ob-logo-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--teal);
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ob-logo-name {
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+      }
+
+      .ob-logo-name span {
+        color: var(--teal-light);
+      }
+
+      .ob-title {
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        margin-bottom: 8px;
+      }
+
+      .ob-title em {
+        font-style: italic;
+        color: var(--teal-light);
+      }
+
+      .ob-sub {
+        font-size: 0.82rem;
+        color: var(--text2);
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+
+      .ob-modes-label {
+        font-size: 0.7rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 10px;
+      }
+
+      .ob-modes {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .ob-mode {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.18s;
+        background: var(--bg3);
+      }
+
+      .ob-mode:hover {
+        border-color: var(--teal-border);
+        background: var(--teal-dim);
+      }
+
+      .ob-mode.selected {
+        border-color: var(--teal);
+        background: var(--teal-dim);
+      }
+
+      .ob-mode-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .icon-dim {
+        background: rgba(186, 117, 23, 0.2);
+      }
+
+      .icon-suppress {
+        background: rgba(29, 158, 117, 0.2);
+      }
+
+      .icon-warn {
+        background: rgba(216, 90, 48, 0.2);
+      }
+
+      .ob-mode-body h4 {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 2px;
+        color: var(--text);
+      }
+
+      .ob-mode-body p {
+        font-size: 0.75rem;
+        color: var(--text2);
+        line-height: 1.5;
+      }
+
+      .ob-check {
+        margin-left: auto;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 1.5px solid var(--border);
+        flex-shrink: 0;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+
+      .ob-mode.selected .ob-check {
+        background: var(--teal);
+        border-color: var(--teal);
+      }
+
+      .ob-mode.selected .ob-check::after {
+        content: '';
+        width: 5px;
+        height: 9px;
+        border: 2px solid white;
+        border-top: none;
+        border-left: none;
+        transform: rotate(45deg) translateY(-1px);
+        display: block;
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 12px;
+        background: var(--teal);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        letter-spacing: 0.01em;
+      }
+
+      .btn-primary:hover {
+        background: #22b885;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary:active {
+        transform: scale(0.98);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* ── MAIN POPUP ── */
+      #screen-main {
+        min-height: 420px;
+      }
+
+      .popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .popup-logo {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .popup-logo-icon {
+        width: 26px;
+        height: 26px;
+        background: var(--teal);
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .popup-logo-name {
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.05rem;
+      }
+
+      .popup-logo-name span {
+        color: var(--teal-light);
+      }
+
+      .master-toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .master-label {
+        font-size: 0.75rem;
+        color: var(--text3);
+      }
+
+      .toggle {
+        width: 40px;
+        height: 22px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 11px;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+
+      .toggle.on {
+        background: var(--teal);
+      }
+
+      .toggle::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.2s;
+      }
+
+      .toggle.on::after {
+        transform: translateX(18px);
+      }
+
+      /* status bar */
+      .status-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: var(--teal-dim);
+        border-bottom: 1px solid var(--teal-border);
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--teal-light);
+        animation: pulse 2s infinite;
+        flex-shrink: 0;
+      }
+
+      @keyframes pulse {
+
+        0%,
+        100% {
+          opacity: 1
+        }
+
+        50% {
+          opacity: 0.35
+        }
+      }
+
+      .status-bar.alert {
+        background: rgba(216, 90, 48, 0.1);
+        border-color: rgba(216, 90, 48, 0.35);
+      }
+
+      .status-bar.alert .status-dot {
+        background: var(--coral);
+      }
+
+      .status-text {
+        font-size: 0.78rem;
+        color: var(--teal-light);
+        flex: 1;
+      }
+
+      .status-bar.alert .status-text {
+        color: #F09575;
+      }
+
+      .events-badge {
+        font-size: 0.72rem;
+        background: rgba(29, 158, 117, 0.2);
+        color: var(--teal-light);
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+
+      /* body */
+      .popup-body {
+        padding: 16px 18px;
+        flex: 1;
+      }
+
+      .section-label {
+        font-size: 0.68rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        margin-bottom: 10px;
+      }
+
+      /* mode selector */
+      .mode-pills {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 18px;
+      }
+
+      .mode-pill {
+        flex: 1;
+        padding: 8px 4px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--bg3);
+        color: var(--text2);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.72rem;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .mode-pill:hover {
+        border-color: var(--teal-border);
+        color: var(--text);
+      }
+
+      .mode-pill.active {
+        border-color: var(--teal);
+        background: var(--teal-dim);
+        color: var(--teal-light);
+      }
+
+      .mode-pill-icon {
+        font-size: 15px;
+      }
+
+      /* sensitivity */
+      .sens-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .sens-row label {
+        font-size: 0.8rem;
+        color: var(--text2);
+      }
+
+      .sens-val {
+        font-size: 0.8rem;
+        color: var(--teal-light);
+        font-weight: 500;
+      }
+
+      input[type=range] {
+        width: 100%;
+        appearance: none;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        outline: none;
+        margin-bottom: 16px;
+        cursor: pointer;
+      }
+
+      input[type=range]::-webkit-slider-thumb {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--teal);
+        cursor: pointer;
+        box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.2);
+      }
+
+      /* sites */
+      .sites-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 18px;
+      }
+
+      .site-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 10px;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      .site-name {
+        font-size: 0.77rem;
+        color: var(--text2);
+      }
+
+      .site-toggle {
+        width: 30px;
+        height: 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.2s;
+      }
+
+      .site-toggle.on {
+        background: var(--teal);
+      }
+
+      .site-toggle::after {
+        content: '';
+        position: absolute;
+        width: 11px;
+        height: 11px;
+        background: white;
+        border-radius: 50%;
+        top: 2.5px;
+        left: 2.5px;
+        transition: transform 0.2s;
+      }
+
+      .site-toggle.on::after {
+        transform: translateX(13px);
+      }
+
+      /* stats row */
+      .stats-mini {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .stat-mini-card {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 9px 8px;
+        text-align: center;
+      }
+
+      .stat-mini-num {
+        display: block;
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.3rem;
+        color: var(--teal-light);
+        line-height: 1;
+        margin-bottom: 3px;
+      }
+
+      .stat-mini-label {
+        font-size: 0.65rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* footer */
+      .popup-footer {
+        padding: 10px 18px 14px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .footer-note {
+        font-size: 0.7rem;
+        color: var(--text3);
+      }
+
+      .btn-link {
+        background: none;
+        border: none;
+        color: var(--teal-light);
+        font-size: 0.72rem;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        text-decoration: underline;
+        opacity: 0.7;
+      }
+
+      .btn-link:hover {
+        opacity: 1;
+      }
+
+      /* disabled state */
+      body.disabled .status-bar {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--border);
+      }
+
+      body.disabled .status-dot {
+        background: var(--text3);
+        animation: none;
+      }
+
+      body.disabled .status-text {
+        color: var(--text3);
+      }
+
+      body.disabled .mode-pill.active {
+        border-color: var(--border);
+        background: var(--bg3);
+        color: var(--text2);
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- ── ONBOARDING SCREEN ── -->
+    <div id="screen-onboard" class="screen active">
+      <div>
+        <div class="ob-logo">
+          <div class="ob-logo-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            </svg>
+          </div>
+          <span class="ob-logo-name">Safe<span>View</span></span>
         </div>
-        <span class="ob-logo-name">Safe<span>View</span></span>
+
+        <div class="ob-title">Choose your<br><em>protection mode</em></div>
+        <p class="ob-sub">SafeView monitors video content in real time and shields you from harmful flashing and
+          strobing — automatically, on every site.</p>
+
+        <div class="ob-modes-label">How should SafeView protect you?</div>
+
+        <div class="ob-modes" id="ob-modes-list">
+          <div class="ob-mode" data-mode="dim">
+            <div class="ob-mode-icon icon-dim" style="pointer-events:none;">🔅</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Auto-dim overlay</h4>
+              <p>Instantly darkens the screen when dangerous flicker is detected. Seamless, zero latency.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+
+          <div class="ob-mode" data-mode="suppress">
+            <div class="ob-mode-icon icon-suppress" style="pointer-events:none;">🛡️</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Flash suppression</h4>
+              <p>Filters harmful frames in real time while preserving as much of the content as possible.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+
+          <div class="ob-mode" data-mode="warn">
+            <div class="ob-mode-icon icon-warn" style="pointer-events:none;">⚠️</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Warning alerts</h4>
+              <p>Shows a visible warning banner when flashing is detected so you can look away or skip.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="ob-title">Choose your<br><em>protection mode</em></div>
-      <p class="ob-sub">SafeView monitors video content in real time and shields you from harmful flashing and strobing — automatically, on every site.</p>
-
-      <div class="ob-modes-label">How should SafeView protect you?</div>
-
-      <div class="ob-modes">
-        <div class="ob-mode" data-mode="dim" onclick="selectOnboardMode(this)">
-          <div class="ob-mode-icon icon-dim">🔅</div>
-          <div class="ob-mode-body">
-            <h4>Auto-dim overlay</h4>
-            <p>Instantly darkens the screen when dangerous flicker is detected. Seamless, zero latency.</p>
-          </div>
-          <div class="ob-check"></div>
-        </div>
-
-        <div class="ob-mode" data-mode="suppress" onclick="selectOnboardMode(this)">
-          <div class="ob-mode-icon icon-suppress">🛡️</div>
-          <div class="ob-mode-body">
-            <h4>Flash suppression</h4>
-            <p>Filters harmful frames in real time while preserving as much of the content as possible.</p>
-          </div>
-          <div class="ob-check"></div>
-        </div>
-
-        <div class="ob-mode" data-mode="warn" onclick="selectOnboardMode(this)">
-          <div class="ob-mode-icon icon-warn">⚠️</div>
-          <div class="ob-mode-body">
-            <h4>Warning alerts</h4>
-            <p>Shows a visible warning banner when flashing is detected so you can look away or skip.</p>
-          </div>
-          <div class="ob-check"></div>
-        </div>
-      </div>
+      <button class="btn-primary" id="ob-confirm" disabled>
+        Start protecting me →
+      </button>
     </div>
 
-    <button class="btn-primary" id="ob-confirm" disabled onclick="completeOnboarding()">
-      Start protecting me →
-    </button>
-  </div>
+    <!-- ── MAIN SCREEN ── -->
+    <div id="screen-main" class="screen">
 
-  <!-- ── MAIN SCREEN ── -->
-  <div id="screen-main" class="screen">
-
-    <div class="popup-header">
-      <div class="popup-logo">
-        <div class="popup-logo-icon">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="3"/><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
-          </svg>
+      <div class="popup-header">
+        <div class="popup-logo">
+          <div class="popup-logo-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            </svg>
+          </div>
+          <span class="popup-logo-name">Safe<span>View</span></span>
         </div>
-        <span class="popup-logo-name">Safe<span>View</span></span>
-      </div>
-      <div class="master-toggle-wrap">
-        <span class="master-label" id="master-label">On</span>
-        <button class="toggle on" id="master-toggle" onclick="toggleMaster()"></button>
-      </div>
-    </div>
-
-    <div class="status-bar" id="status-bar">
-      <div class="status-dot"></div>
-      <span class="status-text" id="status-text">Monitoring — no threats detected</span>
-      <span class="events-badge" id="events-badge">0 blocked</span>
-    </div>
-
-    <div class="popup-body">
-
-      <div class="section-label">Protection mode</div>
-      <div class="mode-pills">
-        <button class="mode-pill" data-mode="dim" onclick="setMode('dim')">
-          <span class="mode-pill-icon">🔅</span>
-          Auto-dim
-        </button>
-        <button class="mode-pill" data-mode="suppress" onclick="setMode('suppress')">
-          <span class="mode-pill-icon">🛡️</span>
-          Suppress
-        </button>
-        <button class="mode-pill" data-mode="warn" onclick="setMode('warn')">
-          <span class="mode-pill-icon">⚠️</span>
-          Warn
-        </button>
+        <div class="master-toggle-wrap">
+          <span class="master-label" id="master-label">On</span>
+          <button class="toggle on" id="master-toggle"></button>
+        </div>
       </div>
 
-      <div id="dim-level-row">
+      <div class="status-bar" id="status-bar">
+        <div class="status-dot"></div>
+        <span class="status-text" id="status-text">Monitoring — no threats detected</span>
+        <span class="events-badge" id="events-badge">0 blocked</span>
+      </div>
+
+      <div class="popup-body">
+
+        <div class="section-label">Protection mode</div>
+        <div class="mode-pills">
+          <button class="mode-pill" data-mode="dim">
+            <span class="mode-pill-icon">🔅</span>
+            Auto-dim
+          </button>
+          <button class="mode-pill" data-mode="suppress">
+            <span class="mode-pill-icon">🛡️</span>
+            Suppress
+          </button>
+          <button class="mode-pill" data-mode="warn">
+            <span class="mode-pill-icon">⚠️</span>
+            Warn
+          </button>
+        </div>
+
+        <div id="dim-level-row">
+          <div class="sens-row">
+            <label>Dim intensity</label>
+            <span class="sens-val" id="dim-val">65%</span>
+          </div>
+          <input type="range" id="dim-slider" min="30" max="90" value="65" step="1">
+        </div>
+
         <div class="sens-row">
-          <label>Dim intensity</label>
-          <span class="sens-val" id="dim-val">65%</span>
+          <label>Detection sensitivity</label>
+          <span class="sens-val" id="sens-val">Medium</span>
         </div>
-        <input type="range" id="dim-slider" min="30" max="90" value="65" step="1"
-               oninput="updateDim(this)">
+        <input type="range" id="sens-slider" min="1" max="3" value="2" step="1">
+
+        <div class="section-label">Active on</div>
+        <div class="sites-grid">
+          <div class="site-row">
+            <span class="site-name">YouTube</span>
+            <button class="site-toggle on" data-site="youtube"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">TikTok</span>
+            <button class="site-toggle on" data-site="tiktok"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Instagram</span>
+            <button class="site-toggle on" data-site="instagram"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Netflix</span>
+            <button class="site-toggle on" data-site="netflix"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Twitch</span>
+            <button class="site-toggle on" data-site="twitch"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">X / Twitter</span>
+            <button class="site-toggle on" data-site="twitter"></button>
+          </div>
+        </div>
+
+        <div class="section-label">This session</div>
+        <div class="stats-mini">
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-blocked">0</span>
+            <span class="stat-mini-label">Blocked</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-uptime">100%</span>
+            <span class="stat-mini-label">Uptime</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-mode-label">—</span>
+            <span class="stat-mini-label">Mode</span>
+          </div>
+        </div>
+
       </div>
 
-      <div class="sens-row">
-        <label>Detection sensitivity</label>
-        <span class="sens-val" id="sens-val">Medium</span>
-      </div>
-      <input type="range" id="sens-slider" min="1" max="3" value="2" step="1"
-             oninput="updateSens(this)">
-
-      <div class="section-label">Active on</div>
-      <div class="sites-grid">
-        <div class="site-row">
-          <span class="site-name">YouTube</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">TikTok</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Instagram</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Netflix</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Twitch</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">X / Twitter</span>
-          <button class="site-toggle on" onclick="this.classList.toggle('on')"></button>
-        </div>
-      </div>
-
-      <div class="section-label">This session</div>
-      <div class="stats-mini">
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-blocked">0</span>
-          <span class="stat-mini-label">Blocked</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-uptime">100%</span>
-          <span class="stat-mini-label">Uptime</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-mode-label">—</span>
-          <span class="stat-mini-label">Mode</span>
-        </div>
+      <div class="popup-footer">
+        <span class="footer-note">SafeView v1.0 · The Thinkers</span>
+        <button class="btn-link" id="btn-change-mode">Change mode</button>
       </div>
 
     </div>
 
-    <div class="popup-footer">
-      <span class="footer-note">SafeView v1.0 · The Thinkers</span>
-      <button class="btn-link" onclick="resetOnboarding()">Change mode</button>
-    </div>
+    <script src="popup.js"></script>
+  </body>
 
-  </div>
-
-  <script src="popup.js"></script>
-</body>
 </html>
