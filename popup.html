@@ -611,173 +611,178 @@
     </style>
   </head>
 
-  <!-- ONBOARDING SCREEN -->
-  <div id="screen-onboard" class="screen active">
-    <div>
-      <div class="ob-logo">
-        <div class="ob-logo-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-            stroke-linecap="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-          </svg>
+  <body>
+
+    <!-- ONBOARDING SCREEN -->
+    <div id="screen-onboard" class="screen active">
+      <div>
+        <div class="ob-logo">
+          <div class="ob-logo-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            </svg>
+          </div>
+          <span class="ob-logo-name">Safe<span>View</span></span>
         </div>
-        <span class="ob-logo-name">Safe<span>View</span></span>
+
+        <div class="ob-title">Choose your<br><em>protection mode</em></div>
+        <p class="ob-sub">SafeView monitors video content in real time and shields you from harmful flashing and
+          strobing
+          —
+          automatically, on every site.</p>
+
+        <div class="ob-modes-label">How should SafeView protect you?</div>
+
+        <div class="ob-modes" id="ob-modes-list">
+          <div class="ob-mode" data-mode="dim">
+            <div class="ob-mode-icon icon-dim" style="pointer-events:none;">🔅</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Auto-dim overlay</h4>
+              <p>Instantly darkens the screen when dangerous flicker is detected. Seamless, zero latency.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+
+          <div class="ob-mode" data-mode="suppress">
+            <div class="ob-mode-icon icon-suppress" style="pointer-events:none;">🛡️</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Flash suppression</h4>
+              <p>Filters harmful frames in real time while preserving as much of the content as possible.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+
+          <div class="ob-mode" data-mode="warn">
+            <div class="ob-mode-icon icon-warn" style="pointer-events:none;">⚠️</div>
+            <div class="ob-mode-body" style="pointer-events:none;">
+              <h4>Warning alerts</h4>
+              <p>Shows a visible warning banner when flashing is detected so you can look away or skip.</p>
+            </div>
+            <div class="ob-check" style="pointer-events:none;"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="ob-title">Choose your<br><em>protection mode</em></div>
-      <p class="ob-sub">SafeView monitors video content in real time and shields you from harmful flashing and strobing
-        —
-        automatically, on every site.</p>
-
-      <div class="ob-modes-label">How should SafeView protect you?</div>
-
-      <div class="ob-modes" id="ob-modes-list">
-        <div class="ob-mode" data-mode="dim">
-          <div class="ob-mode-icon icon-dim" style="pointer-events:none;">🔅</div>
-          <div class="ob-mode-body" style="pointer-events:none;">
-            <h4>Auto-dim overlay</h4>
-            <p>Instantly darkens the screen when dangerous flicker is detected. Seamless, zero latency.</p>
-          </div>
-          <div class="ob-check" style="pointer-events:none;"></div>
-        </div>
-
-        <div class="ob-mode" data-mode="suppress">
-          <div class="ob-mode-icon icon-suppress" style="pointer-events:none;">🛡️</div>
-          <div class="ob-mode-body" style="pointer-events:none;">
-            <h4>Flash suppression</h4>
-            <p>Filters harmful frames in real time while preserving as much of the content as possible.</p>
-          </div>
-          <div class="ob-check" style="pointer-events:none;"></div>
-        </div>
-
-        <div class="ob-mode" data-mode="warn">
-          <div class="ob-mode-icon icon-warn" style="pointer-events:none;">⚠️</div>
-          <div class="ob-mode-body" style="pointer-events:none;">
-            <h4>Warning alerts</h4>
-            <p>Shows a visible warning banner when flashing is detected so you can look away or skip.</p>
-          </div>
-          <div class="ob-check" style="pointer-events:none;"></div>
-        </div>
-      </div>
+      <button class="btn-primary" id="ob-confirm" disabled>
+        Start protecting me →
+      </button>
     </div>
 
-    <button class="btn-primary" id="ob-confirm" disabled>
-      Start protecting me →
-    </button>
-  </div>
+    <!-- MAIN SCREEN -->
+    <div id="screen-main" class="screen">
 
-  <!-- MAIN SCREEN -->
-  <div id="screen-main" class="screen">
-
-    <div class="popup-header">
-      <div class="popup-logo">
-        <div class="popup-logo-icon">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-            stroke-linecap="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-          </svg>
+      <div class="popup-header">
+        <div class="popup-logo">
+          <div class="popup-logo-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            </svg>
+          </div>
+          <span class="popup-logo-name">Safe<span>View</span></span>
         </div>
-        <span class="popup-logo-name">Safe<span>View</span></span>
-      </div>
-      <div class="master-toggle-wrap">
-        <span class="master-label" id="master-label">On</span>
-        <button class="toggle on" id="master-toggle"></button>
-      </div>
-    </div>
-
-    <div class="status-bar" id="status-bar">
-      <div class="status-dot"></div>
-      <span class="status-text" id="status-text">Monitoring — no threats detected</span>
-      <span class="events-badge" id="events-badge">0 blocked</span>
-    </div>
-
-    <div class="popup-body">
-
-      <div class="section-label">Protection mode</div>
-      <div class="mode-pills">
-        <button class="mode-pill" data-mode="dim">
-          <span class="mode-pill-icon">🔅</span>
-          Auto-dim
-        </button>
-        <button class="mode-pill" data-mode="suppress">
-          <span class="mode-pill-icon">🛡️</span>
-          Suppress
-        </button>
-        <button class="mode-pill" data-mode="warn">
-          <span class="mode-pill-icon">⚠️</span>
-          Warn
-        </button>
+        <div class="master-toggle-wrap">
+          <span class="master-label" id="master-label">On</span>
+          <button class="toggle on" id="master-toggle"></button>
+        </div>
       </div>
 
-      <div id="dim-level-row">
+      <div class="status-bar" id="status-bar">
+        <div class="status-dot"></div>
+        <span class="status-text" id="status-text">Monitoring — no threats detected</span>
+        <span class="events-badge" id="events-badge">0 blocked</span>
+      </div>
+
+      <div class="popup-body">
+
+        <div class="section-label">Protection mode</div>
+        <div class="mode-pills">
+          <button class="mode-pill" data-mode="dim">
+            <span class="mode-pill-icon">🔅</span>
+            Auto-dim
+          </button>
+          <button class="mode-pill" data-mode="suppress">
+            <span class="mode-pill-icon">🛡️</span>
+            Suppress
+          </button>
+          <button class="mode-pill" data-mode="warn">
+            <span class="mode-pill-icon">⚠️</span>
+            Warn
+          </button>
+        </div>
+
+        <div id="dim-level-row">
+          <div class="sens-row">
+            <label>Dim intensity</label>
+            <span class="sens-val" id="dim-val">65%</span>
+          </div>
+          <input type="range" id="dim-slider" min="30" max="90" value="65" step="1">
+        </div>
+
         <div class="sens-row">
-          <label>Dim intensity</label>
-          <span class="sens-val" id="dim-val">65%</span>
+          <label>Detection sensitivity</label>
+          <span class="sens-val" id="sens-val">Medium</span>
         </div>
-        <input type="range" id="dim-slider" min="30" max="90" value="65" step="1">
+        <input type="range" id="sens-slider" min="1" max="3" value="2" step="1">
+
+        <div class="section-label">Active on</div>
+        <div class="sites-grid">
+          <div class="site-row">
+            <span class="site-name">YouTube</span>
+            <button class="site-toggle on" data-site="youtube"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">TikTok</span>
+            <button class="site-toggle on" data-site="tiktok"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Instagram</span>
+            <button class="site-toggle on" data-site="instagram"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Netflix</span>
+            <button class="site-toggle on" data-site="netflix"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">Twitch</span>
+            <button class="site-toggle on" data-site="twitch"></button>
+          </div>
+          <div class="site-row">
+            <span class="site-name">X / Twitter</span>
+            <button class="site-toggle on" data-site="twitter"></button>
+          </div>
+        </div>
+
+        <div class="section-label">This session</div>
+        <div class="stats-mini">
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-blocked">0</span>
+            <span class="stat-mini-label">Blocked</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-uptime">100%</span>
+            <span class="stat-mini-label">Uptime</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-num" id="stat-mode-label">—</span>
+            <span class="stat-mini-label">Mode</span>
+          </div>
+        </div>
+
       </div>
 
-      <div class="sens-row">
-        <label>Detection sensitivity</label>
-        <span class="sens-val" id="sens-val">Medium</span>
-      </div>
-      <input type="range" id="sens-slider" min="1" max="3" value="2" step="1">
-
-      <div class="section-label">Active on</div>
-      <div class="sites-grid">
-        <div class="site-row">
-          <span class="site-name">YouTube</span>
-          <button class="site-toggle on" data-site="youtube"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">TikTok</span>
-          <button class="site-toggle on" data-site="tiktok"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Instagram</span>
-          <button class="site-toggle on" data-site="instagram"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Netflix</span>
-          <button class="site-toggle on" data-site="netflix"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">Twitch</span>
-          <button class="site-toggle on" data-site="twitch"></button>
-        </div>
-        <div class="site-row">
-          <span class="site-name">X / Twitter</span>
-          <button class="site-toggle on" data-site="twitter"></button>
-        </div>
-      </div>
-
-      <div class="section-label">This session</div>
-      <div class="stats-mini">
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-blocked">0</span>
-          <span class="stat-mini-label">Blocked</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-uptime">100%</span>
-          <span class="stat-mini-label">Uptime</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-num" id="stat-mode-label">—</span>
-          <span class="stat-mini-label">Mode</span>
-        </div>
+      <div class="popup-footer">
+        <span class="footer-note">SafeView v1.0 · The Thinkers</span>
+        <button class="btn-link" id="btn-change-mode">Change mode</button>
       </div>
 
     </div>
 
-    <div class="popup-footer">
-      <span class="footer-note">SafeView v1.0 · The Thinkers</span>
-      <button class="btn-link" id="btn-change-mode">Change mode</button>
-    </div>
+    <script src="popup.js"></script>
 
-  </div>
-
-  <script src="popup.js"></script>
+  </body>
 
 </html>
