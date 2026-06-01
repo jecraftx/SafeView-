@@ -1,9 +1,5 @@
 /**
  * SafeView Content Script
- * ========================
- * Detects harmful flashing by sampling video frames.
- * Uses createImageBitmap() which works in extension content scripts
- * even when ctx.drawImage() would be tainted by CORS.
  */
 
 (function () {
@@ -32,29 +28,36 @@
   let canvas, ctx;
 
   // ─── Load settings ────────────────────────────────────────────
-  chrome.storage.sync.get(['safeview_settings'], (result) => {
-    if (result.safeview_settings) {
-      settings = Object.assign(settings, result.safeview_settings);
-    }
-    // Always init — even if mode is null, overlay should be ready
+  try {
+    chrome.storage.sync.get(['safeview_settings'], (result) => {
+      if (result.safeview_settings) {
+        settings = Object.assign(settings, result.safeview_settings);
+      }
+      init();
+    });
+  } catch(e) {
     init();
-  });
+  }
 
   // ─── Settings updates from popup ──────────────────────────────
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type === 'SETTINGS_UPDATE') {
-      settings = Object.assign(settings, msg.settings);
-      if (!settings.enabled) {
-        stopProtection();
-      } else if (!loopRunning) {
-        init();
+  try {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === 'SETTINGS_UPDATE') {
+        settings = Object.assign(settings, msg.settings);
+        if (!settings.enabled) {
+          stopProtection();
+        } else if (!loopRunning) {
+          init();
+        }
       }
-    }
-    if (msg.type === 'GET_STATS') {
-      sendResponse({ eventsBlocked });
-    }
-    return true;
-  });
+      if (msg.type === 'GET_STATS') {
+        sendResponse({ eventsBlocked });
+      }
+      return true;
+    });
+  } catch(e) {
+    // runtime not available on this page
+  }
 
   // ─── Init ─────────────────────────────────────────────────────
   function init() {
@@ -72,7 +75,7 @@
     }
   }
 
-  // ─── Analysis loop using requestAnimationFrame ────────────────
+  // ─── Analysis loop ────────────────────────────────────────────
   function startLoop() {
     let lastSample = 0;
 
@@ -105,8 +108,6 @@
   }
 
   // ─── Frame analysis ───────────────────────────────────────────
-  // Uses createImageBitmap which works even with CORS-restricted videos
-  // in extension content scripts (unlike ctx.drawImage which gets tainted)
   function analyzeFrame(video) {
     createImageBitmap(video, {
       resizeWidth: 32,
@@ -120,7 +121,6 @@
       try {
         imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       } catch (e) {
-        // Still tainted — fall back to CSS brightness heuristic
         analyzeViaBrightness(video);
         return;
       }
@@ -129,22 +129,12 @@
       processLuminance(luminance);
 
     }).catch(() => {
-      // createImageBitmap failed — use brightness fallback
       analyzeViaBrightness(video);
     });
   }
 
-  // ─── Fallback: CSS brightness heuristic ───────────────────────
-  // When canvas is blocked, approximate luminance from the video
-  // element's natural dimensions and a tiny off-screen canvas trick.
-  // As a last resort, just count large style changes.
-  let lastBrightnessSample = null;
-
+  // ─── Fallback via MediaStreamTrackProcessor ───────────────────
   function analyzeViaBrightness(video) {
-    // Use the video's currentTime as a proxy — if it's moving, sample
-    // the thumbnail via an image element pointed at the video poster
-    // This won't work but we can at least keep the loop alive.
-    // Better: use MediaStreamTrackProcessor if available (Chrome 94+)
     if (typeof MediaStreamTrackProcessor !== 'undefined' && video.captureStream) {
       try {
         const stream = video.captureStream();
@@ -152,45 +142,34 @@
         if (track) {
           const processor = new MediaStreamTrackProcessor({ track });
           const reader = processor.readable.getReader();
-
-          function readFrame() {
-            reader.read().then(({ value, done }) => {
-              if (done || !value) return;
-              createImageBitmap(value).then(bitmap => {
-                ctx.drawImage(bitmap, 0, 0, 32, 18);
-                bitmap.close();
-                value.close();
-                try {
-                  const data = ctx.getImageData(0, 0, 32, 18);
-                  processLuminance(computeLuminance(data.data));
-                } catch(e) {}
-              }).catch(() => { try { value.close(); } catch(e) {} });
-            }).catch(() => {});
-          }
-
-          // Read one frame now
-          readFrame();
+          reader.read().then(({ value, done }) => {
+            if (done || !value) return;
+            createImageBitmap(value).then(bitmap => {
+              ctx.drawImage(bitmap, 0, 0, 32, 18);
+              bitmap.close();
+              value.close();
+              try {
+                const data = ctx.getImageData(0, 0, 32, 18);
+                processLuminance(computeLuminance(data.data));
+              } catch(e) {}
+            }).catch(() => { try { value.close(); } catch(e) {} });
+          }).catch(() => {});
           track.stop();
-          return;
         }
       } catch(e) {}
     }
-
-    // Ultimate fallback: detect based on rapid DOM class/style changes
-    // on the video wrapper — not perfect but catches some cases
   }
 
   // ─── Luminance ────────────────────────────────────────────────
   function computeLuminance(pixels) {
     let total = 0;
     const len = pixels.length;
-    const step = 4 * 4; // sample every 4th pixel for speed
+    const step = 16;
     let count = 0;
     for (let i = 0; i < len; i += step) {
       const r = pixels[i]   / 255;
       const g = pixels[i+1] / 255;
       const b = pixels[i+2] / 255;
-      // Simple perceived brightness (fast)
       total += 0.299 * r + 0.587 * g + 0.114 * b;
       count++;
     }
@@ -366,9 +345,11 @@
 
   // ─── Background messaging ─────────────────────────────────────
   function notifyBackground() {
-    chrome.runtime.sendMessage({ type: 'FLASH_DETECTED', eventsBlocked }, () => {
-      void chrome.runtime.lastError;
-    });
+    try {
+      chrome.runtime.sendMessage({ type: 'FLASH_DETECTED', eventsBlocked }, () => {
+        void chrome.runtime.lastError;
+      });
+    } catch(e) {}
   }
 
 })();
