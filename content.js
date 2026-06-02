@@ -5,12 +5,9 @@
 (function () {
   'use strict';
 
-  const SAMPLE_INTERVAL_MS = 50;
-  const FLASH_WINDOW_MS    = 1000;
-  const FLASH_THRESHOLD    = 3;
-  const DIM_OVERLAY_ID     = 'safeview-dim-overlay';
-  const HUD_ID             = 'safeview-hud';
-  const WARN_ID            = 'safeview-warning';
+  const DIM_OVERLAY_ID = 'safeview-dim-overlay';
+  const HUD_ID         = 'safeview-hud';
+  const WARN_ID        = 'safeview-warning';
 
   let settings = {
     enabled: true,
@@ -19,13 +16,14 @@
     sensitivity: 0.10,
   };
 
-  let flashTimestamps = [];
-  let lastLuminance   = null;
   let isProtecting    = false;
   let protectTimer    = null;
   let eventsBlocked   = 0;
-  let loopRunning     = false;
-  let canvas, ctx;
+  let flashTimestamps = [];
+  let lastLuminance   = null;
+
+  const FLASH_WINDOW_MS = 1000;
+  const FLASH_THRESHOLD = 3;
 
   // ─── Load settings ────────────────────────────────────────────
   try {
@@ -33,150 +31,94 @@
       if (result.safeview_settings) {
         settings = Object.assign(settings, result.safeview_settings);
       }
-      init();
+      start();
     });
   } catch(e) {
-    init();
+    start();
   }
 
-  // ─── Settings updates from popup ──────────────────────────────
+  // ─── Message listener ─────────────────────────────────────────
   try {
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'SETTINGS_UPDATE') {
         settings = Object.assign(settings, msg.settings);
-        if (!settings.enabled) {
-          stopProtection();
-        } else if (!loopRunning) {
-          init();
-        }
+        window.postMessage({ type: 'SAFEVIEW_SETTINGS', settings }, '*');
+        if (!settings.enabled) stopProtection();
       }
       if (msg.type === 'GET_STATS') {
         sendResponse({ eventsBlocked });
       }
       return true;
     });
-  } catch(e) {
-    // runtime not available on this page
-  }
+  } catch(e) {}
 
-  // ─── Init ─────────────────────────────────────────────────────
-  function init() {
-    canvas = document.createElement('canvas');
-    canvas.width  = 32;
-    canvas.height = 18;
-    ctx = canvas.getContext('2d', { willReadFrequently: true });
-
+  // ─── Start ────────────────────────────────────────────────────
+  function start() {
     injectOverlay();
     injectHUD();
+    injectPageScript();
 
-    if (!loopRunning) {
-      loopRunning = true;
-      startLoop();
-    }
-  }
-
-  // ─── Analysis loop ────────────────────────────────────────────
-  function startLoop() {
-    let lastSample = 0;
-
-    function loop(timestamp) {
-      if (!settings.enabled) {
-        loopRunning = false;
-        return;
+    window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      if (e.data && e.data.type === 'SAFEVIEW_LUMINANCE') {
+        handleLuminance(e.data.luminance);
       }
-
-      requestAnimationFrame(loop);
-
-      if (timestamp - lastSample < SAMPLE_INTERVAL_MS) return;
-      lastSample = timestamp;
-
-      if (!settings.mode) return;
-
-      const video = getPrimaryVideo();
-      if (!video) return;
-
-      analyzeFrame(video);
-    }
-
-    requestAnimationFrame(loop);
-  }
-
-  function getPrimaryVideo() {
-    return Array.from(document.querySelectorAll('video'))
-      .filter(v => v.readyState >= 2 && !v.paused && !v.ended && v.offsetWidth > 0)
-      .sort((a, b) => (b.offsetWidth * b.offsetHeight) - (a.offsetWidth * a.offsetHeight))[0] || null;
-  }
-
-  // ─── Frame analysis ───────────────────────────────────────────
-  function analyzeFrame(video) {
-    createImageBitmap(video, {
-      resizeWidth: 32,
-      resizeHeight: 18,
-      resizeQuality: 'low'
-    }).then(bitmap => {
-      ctx.drawImage(bitmap, 0, 0);
-      bitmap.close();
-
-      let imageData;
-      try {
-        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      } catch (e) {
-        analyzeViaBrightness(video);
-        return;
-      }
-
-      const luminance = computeLuminance(imageData.data);
-      processLuminance(luminance);
-
-    }).catch(() => {
-      analyzeViaBrightness(video);
     });
   }
 
-  // ─── Fallback via MediaStreamTrackProcessor ───────────────────
-  function analyzeViaBrightness(video) {
-    if (typeof MediaStreamTrackProcessor !== 'undefined' && video.captureStream) {
-      try {
-        const stream = video.captureStream();
-        const [track] = stream.getVideoTracks();
-        if (track) {
-          const processor = new MediaStreamTrackProcessor({ track });
-          const reader = processor.readable.getReader();
-          reader.read().then(({ value, done }) => {
-            if (done || !value) return;
-            createImageBitmap(value).then(bitmap => {
-              ctx.drawImage(bitmap, 0, 0, 32, 18);
-              bitmap.close();
-              value.close();
-              try {
-                const data = ctx.getImageData(0, 0, 32, 18);
-                processLuminance(computeLuminance(data.data));
-              } catch(e) {}
-            }).catch(() => { try { value.close(); } catch(e) {} });
-          }).catch(() => {});
-          track.stop();
-        }
-      } catch(e) {}
-    }
+  // ─── Inject page-world script (bypasses CORS) ─────────────────
+  function injectPageScript() {
+    const script = document.createElement('script');
+    script.textContent = `
+(function() {
+  const SAMPLE_MS = 50;
+  const canvas = document.createElement('canvas');
+  canvas.width = 32; canvas.height = 18;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let lastSample = 0;
+
+  function getVideo() {
+    return Array.from(document.querySelectorAll('video'))
+      .filter(v => v.readyState >= 2 && !v.paused && !v.ended && v.offsetWidth > 0)
+      .sort((a,b) => (b.offsetWidth*b.offsetHeight) - (a.offsetWidth*a.offsetHeight))[0] || null;
   }
 
-  // ─── Luminance ────────────────────────────────────────────────
   function computeLuminance(pixels) {
-    let total = 0;
-    const len = pixels.length;
-    const step = 16;
-    let count = 0;
-    for (let i = 0; i < len; i += step) {
-      const r = pixels[i]   / 255;
-      const g = pixels[i+1] / 255;
-      const b = pixels[i+2] / 255;
-      total += 0.299 * r + 0.587 * g + 0.114 * b;
+    let total = 0, count = 0;
+    for (let i = 0; i < pixels.length; i += 16) {
+      total += 0.299*(pixels[i]/255) + 0.587*(pixels[i+1]/255) + 0.114*(pixels[i+2]/255);
       count++;
     }
-    return count > 0 ? total / count : 0;
+    return count > 0 ? total/count : -1;
   }
 
-  function processLuminance(luminance) {
+  function loop(ts) {
+    requestAnimationFrame(loop);
+    if (ts - lastSample < SAMPLE_MS) return;
+    lastSample = ts;
+    const vid = getVideo();
+    if (!vid) return;
+    try {
+      ctx.drawImage(vid, 0, 0, 32, 18);
+      const data = ctx.getImageData(0, 0, 32, 18);
+      const lum = computeLuminance(data.data);
+      if (lum >= 0) {
+        window.postMessage({ type: 'SAFEVIEW_LUMINANCE', luminance: lum }, '*');
+      }
+    } catch(e) {}
+  }
+
+  requestAnimationFrame(loop);
+})();
+    `;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+
+  // ─── Process luminance ────────────────────────────────────────
+  function handleLuminance(luminance) {
+    if (!settings.enabled || !settings.mode) return;
+
     if (lastLuminance !== null) {
       const delta = Math.abs(luminance - lastLuminance);
       const threshold = settings.sensitivity || 0.10;
@@ -185,11 +127,7 @@
       }
     }
     lastLuminance = luminance;
-    checkFlashRate();
-  }
 
-  // ─── Flash rate check ─────────────────────────────────────────
-  function checkFlashRate() {
     const now = Date.now();
     flashTimestamps = flashTimestamps.filter(t => now - t <= FLASH_WINDOW_MS);
     const rate = flashTimestamps.length;
@@ -219,19 +157,18 @@
 
     } else if (settings.mode === 'suppress') {
       overlay.style.opacity = '0';
-      const video = getPrimaryVideo();
-      if (video) {
-        video.style.transition = 'filter 0.05s';
-        video.style.filter = 'saturate(0.1) brightness(0.55) contrast(0.75)';
+      const vid = document.querySelector('video');
+      if (vid) {
+        vid.style.transition = 'filter 0.05s';
+        vid.style.filter = 'saturate(0.1) brightness(0.55) contrast(0.75)';
       }
 
     } else if (settings.mode === 'warn') {
       overlay.style.opacity = '0';
       showWarningBanner(rate);
-      // Auto-pause the video
-      const video = document.querySelector('video');
-      if (video && !video.paused) {
-        video.pause();
+      const vid = document.querySelector('video');
+      if (vid && !vid.paused) {
+        vid.pause();
       }
     }
   }
@@ -248,16 +185,14 @@
     const overlay = document.getElementById(DIM_OVERLAY_ID);
     if (overlay) overlay.style.opacity = '0';
 
-    const video = getPrimaryVideo();
-    if (video) video.style.filter = '';
+    const vid = document.querySelector('video');
+    if (vid) {
+      vid.style.filter = '';
+      if (vid.paused) vid.play();
+    }
 
     removeWarningBanner();
     updateHUD('SafeView active', false);
-    // Resume video after protection ends
-    const video = document.querySelector('video');
-    if (video && video.paused) {
-      video.play();
-    }
   }
 
   // ─── Overlay ──────────────────────────────────────────────────
@@ -297,7 +232,7 @@
     `;
     el.innerHTML = `
       <span style="width:8px;height:8px;border-radius:50%;background:#D85A30;flex-shrink:0;display:block;"></span>
-      <span><strong style="color:#F09575;">Flashing content detected</strong> — ${rate} flashes/sec. Look away or skip.</span>
+      <span><strong style="color:#F09575;">Flashing content detected</strong> — ${rate} flashes/sec. Video paused for safety.</span>
       <button id="safeview-warn-close" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;padding:0;line-height:1;">×</button>
     `;
     document.documentElement.appendChild(el);
@@ -346,11 +281,6 @@
     hud.style.borderColor = isAlert ? 'rgba(216,90,48,0.5)' : 'rgba(29,158,117,0.45)';
     hud.style.opacity = '1';
     if (!isAlert) setTimeout(() => { hud.style.opacity = '0'; }, 4000);
-  }
-
-  function removeHUD() {
-    const el = document.getElementById(HUD_ID);
-    if (el) el.remove();
   }
 
   // ─── Background messaging ─────────────────────────────────────
