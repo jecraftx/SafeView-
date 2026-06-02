@@ -228,6 +228,11 @@
     } else if (settings.mode === 'warn') {
       overlay.style.opacity = '0';
       showWarningBanner(rate);
+      // Auto-pause the video
+      const video = document.querySelector('video');
+      if (video && !video.paused) {
+        video.pause();
+      }
     }
   }
 
@@ -248,6 +253,11 @@
 
     removeWarningBanner();
     updateHUD('SafeView active', false);
+    // Resume video after protection ends
+    const video = document.querySelector('video');
+    if (video && video.paused) {
+      video.play();
+    }
   }
 
   // ─── Overlay ──────────────────────────────────────────────────
